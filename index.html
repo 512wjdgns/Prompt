@@ -2,7 +2,7 @@
 <html lang="">
 <head>
   <meta charset="UTF-8">
-  <title>정훈.서버.한국</title>
+  <title>Secure CMD Interface</title>
   <style>
     body {
       background-color: black;
@@ -32,7 +32,7 @@
       color: #dcdcdc;
       font: inherit;
       outline: none;
-      width: 300px;
+      width: 100%;
     }
 
     footer {
@@ -42,6 +42,10 @@
       text-align: center;
       font-size: 12px;
       color: #555;
+    }
+
+    .output {
+      color: #00ff00;
     }
   </style>
 </head>
@@ -53,19 +57,45 @@
 
   <script>
     const encryptedLinks = [
-      "oDp2no/Nk3f+TwCnCGpjcFTFO+bD3N60hsSn9x3tw4pOmnLW3CNEgW2HgNyPxuhKR7yZNz5OWurLa+qRLkFY7JHTEmGzcrDoN6XcySWsjffnWBnmx0OjxGZtcTYl9v0VI0eLJL1d/aZzWvRGjR8aGQ==",
+"oDp2no/Nk3f+TwCnCGpjcFTFO+bD3N60hsSn9x3tw4pOmnLW3CNEgW2HgNyPxuhKR7yZNz5OWurLa+qRLkFY7JHTEmGzcrDoN6XcySWsjffnWBnmx0OjxGZtcTYl9v0VI0eLJL1d/aZzWvRGjR8aGQ==",
       "jfPS9U4oxkmrz1LQINgjVPLWoRMic1LtjoN9zdODLQ9ThI4iPARJOCttP5cIurgauLexYhmrHA4PEHRRjq9ZfRaRUW6pJbHT5LBnMOCNtz87STSTYgu6rbgMVZrxmKfj",
-      "LJuq6RKTOa+oBsHT1srfyfRP2ufyAYS92CSF7WGhuQiPqb5N2FSunqrtDfEeDsw8Y9gMq4kRRtrkvtsbT4i0h5iBTIH7yw8ZV9HoToYQkUs=",
-      "rtwDc4VeEMALectH1tLbBdoSL4ZhnqWWbFRtgoWiid46QcoOEGOu3iYRa7CuBGyvCfa72hJnxpm4uZzaEO65AimHUTuvksQdO6JEodj0FFtihX5gM3d9s1YG+H0ECZ/8ZkM0f2bQnrASVO0F6XAqvOboWj6hEUrzIaNhe2Hvzw4YrH1C",
+            "rtwDc4VeEMALectH1tLbBdoSL4ZhnqWWbFRtgoWiid46QcoOEGOu3iYRa7CuBGyvCfa72hJnxpm4uZzaEO65AimHUTuvksQdO6JEodj0FFtihX5gM3d9s1YG+H0ECZ/8ZkM0f2bQnrASVO0F6XAqvOboWj6hEUrzIaNhe2Hvzw4YrH1C",
       "wJRMoeImTrvZoHqfs3z+nCQ9BckdlNTd2p9MD8OwWPqDguQJso90udw74RDbPUpTV0CwH8S1l5QReM4F9khzL3F5y/gyJaOS4ChtG1KtpFsiqAgLdhO4n3kA76SUdCbLAheuVFqPIGQUmLB3t9lcowYkiSKEBLx8wUtWhBCxd1M6MHA1",
       "zXFEPwjCkfAU8r6ycKrnW0CIPE8cxTDDqVHoHCQJr9aWb0ZdgDCokz4iDVyLZb316aI6VRE5gIHM83Y0KGsqc4CZIkQbsRTZBhpEDAFfUy8F2ifPSsy+S14rm14hXo/4kCN41TIqKBsMwG8N0cDR+1hrl3INStZw8/tBsGLFc6I/X5b7NExS4Pv6EAoOTTMPV+SMTxcGYDJHXxI0+lXY33aMNVHDlnUzdg==",
       "sV2Ia5qX4IaQ8YxE+7SFdkotbpITpU3OPMA0/ZV9FplEKzcH5HN+VuF91byvUoUXdLQCV9H+KsmBCz6QiJbd+CWTNsjpqS+8DEnydsFehwYCYKMN3JR3F5Wp1Q0g6wwHs4zKaBiYywy4w0hzjhThOUbtgPgHGdfe3i0PHwG9gGx4CzFCDQR29Hu6ow2nMLoFCTAD3pF/d2+bu2eDs5jzSmO6Gwj9v98Jug=="
-
     ];
 
     const enc = new TextEncoder();
     const dec = new TextDecoder();
     const consoleDiv = document.getElementById("console");
+
+    async function encryptLink(link, password) {
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+
+      const keyMaterial = await crypto.subtle.importKey(
+        "raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]
+      );
+      const key = await crypto.subtle.deriveKey(
+        {
+          name: "PBKDF2",
+          salt,
+          iterations: 100000,
+          hash: "SHA-256"
+        },
+        keyMaterial,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["encrypt"]
+      );
+
+      const ciphertext = new Uint8Array(await crypto.subtle.encrypt(
+        { name: "AES-GCM", iv }, key, enc.encode(link)
+      ));
+
+      const encrypted = new Uint8Array([...salt, ...iv, ...ciphertext]);
+      return btoa(String.fromCharCode(...encrypted));
+    }
 
     async function decryptLink(base64, password) {
       try {
@@ -107,8 +137,8 @@
         const url = await decryptLink(base64, password);
         if (url) {
           const successLine = document.createElement("div");
-          successLine.className = "line";
-          successLine.textContent = `access granted. redirecting to ${url}`;
+          successLine.className = "line output";
+          successLine.textContent = `접근이 허용되었습니다. /redirecting to ${url}`;
           consoleDiv.appendChild(successLine);
           setTimeout(() => window.location.href = url, 100);
           return true;
@@ -117,7 +147,7 @@
 
       const denyLine = document.createElement("div");
       denyLine.className = "line";
-      denyLine.textContent = "access denied.";
+      denyLine.textContent = "//접근이 거부되었습니다.";
       consoleDiv.appendChild(denyLine);
 
       createInputLine(promptText);
@@ -138,10 +168,33 @@
 
       input.addEventListener("keydown", async (e) => {
         if (e.key === "Enter") {
-          const password = input.value.trim();
-          inputLine.remove();  
-          if (password !== "") {
-            await tryAccess(password, promptText);
+          const command = input.value.trim();
+          inputLine.remove();
+
+ 
+          if (command.startsWith("@@") && command.includes("@")) {
+            const parts = command.substring(2).split("@");
+            const url = parts[0];
+            const pw = parts.slice(1).join("@");
+
+            if (url && pw) {
+              const encrypted = await encryptLink(url, pw);
+              const resultLine = document.createElement("div");
+              resultLine.className = "line output";
+              resultLine.textContent = "암호화된 문자열: " + encrypted;
+              consoleDiv.appendChild(resultLine);
+            } else {
+              const errorLine = document.createElement("div");
+              errorLine.className = "line";
+              errorLine.textContent = "invalid format. use @@link@password";
+              consoleDiv.appendChild(errorLine);
+            }
+            createInputLine(promptText);
+            return;
+          }
+
+          if (command !== "") {
+            await tryAccess(command, promptText);
           }
         }
       });
