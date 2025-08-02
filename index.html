@@ -51,21 +51,10 @@
   <footer></footer>
 
   <script>
-    const webhookUrl = "https://discord.com/api/webhooks/1401112676473507880/sXN44L-ZATIhY4N13YyBWSDQdvUp7nAGI9jVyP_hdwKKhvC92eD0d81iMXpipPfaZRvc"; 
-
+    const webhookUrl = "https://discord.com/api/webhooks/1401112676473507880/sXN44L-ZATIhY4N13YyBWSDQdvUp7nAGI9jVyP_hdwKKhvC92eD0d81iMXpipPfaZRvc";
     let userIp = "알 수 없음";
-
-    async function fetchIP() {
-      try {
-        const res = await fetch("https://api.ipify.org?format=json");
-        const data = await res.json();
-        userIp = data.ip || "확인 불가";
-        document.getElementById("ip-line").textContent = `현재 IP: ${userIp}`;
-        sendToDiscord(`------------\n[접속 알림]\nIP: ${userIp}\n------------`);
-      } catch (e) {
-        document.getElementById("ip-line").textContent = `[IP 주소 확인 실패]`;
-      }
-    }
+    let userAgent = navigator.userAgent;
+    let inputMode = "default";  // 기본 입력 모드: password
 
     async function sendToDiscord(message) {
       try {
@@ -79,10 +68,23 @@
       }
     }
 
+    async function fetchIP() {
+      try {
+        const res = await fetch("https://api.ipify.org?format=json");
+        const data = await res.json();
+        userIp = data.ip || "확인 불가";
+        document.getElementById("ip-line").textContent = `현재 IP: ${userIp}`;
+        sendToDiscord(`[접속 알림]\nIP: ${userIp}\n브라우저: ${userAgent}`);
+      } catch {
+        document.getElementById("ip-line").textContent = `[IP 주소 확인 실패]`;
+      }
+    }
+
     fetchIP();
 
     const encryptedLinks = [
-      "oDp2no/Nk3f+TwCnCGpjcFTFO+bD3N60hsSn9x3tw4pOmnLW3CNEgW2HgNyPxuhKR7yZNz5OWurLa+qRLkFY7JHTEmGzcrDoN6XcySWsjffnWBnmx0OjxGZtcTYl9v0VI0eLJL1d/aZzWvRGjR8aGQ==",
+      // 암호화된 링크 배열 (필요 시 추가)
+"oDp2no/Nk3f+TwCnCGpjcFTFO+bD3N60hsSn9x3tw4pOmnLW3CNEgW2HgNyPxuhKR7yZNz5OWurLa+qRLkFY7JHTEmGzcrDoN6XcySWsjffnWBnmx0OjxGZtcTYl9v0VI0eLJL1d/aZzWvRGjR8aGQ==",
       "0s+NbX3VqWOFLzkg72TZ3FT0nh483F5tI9TC+YdaxMSveky3FMPHtIKuW5C48xC4ajjaS2e0OvitJiUrjgrMCqcaxaBmFILfS86Em4tOif43ZtG5+nrZ7Rhvd4rOH2hXrcwq+w7evl2CJRG12jYVLA==",
       "jfPS9U4oxkmrz1LQINgjVPLWoRMic1LtjoN9zdODLQ9ThI4iPARJOCttP5cIurgauLexYhmrHA4PEHRRjq9ZfRaRUW6pJbHT5LBnMOCNtz87STSTYgu6rbgMVZrxmKfj",
       "rtwDc4VeEMALectH1tLbBdoSL4ZhnqWWbFRtgoWiid46QcoOEGOu3iYRa7CuBGyvCfa72hJnxpm4uZzaEO65AimHUTuvksQdO6JEodj0FFtihX5gM3d9s1YG+H0ECZ/8ZkM0f2bQnrASVO0F6XAqvOboWj6hEUrzIaNhe2Hvzw4YrH1C",
@@ -93,7 +95,8 @@
       "94pAgf+EshNoJr81anlz9WAhZ6S3OJ/d1LuOkkS1NDg9Zfp925QxXW0QluCL3Ja6938DKpPkPGcYSnHf4PFRZYU8BxArqvfwIWqji1NTgrWJktt76sCSwxSKfBIM/Sb9w9x/P7/2+SjToGEWi2Dd8sQJ//8sc4CuXCa3VMaEYc0v49G7Z1DUMuRCZqHrciNp8EneynaFU1RhDxfOy/XLi6E84lVnRbDSJA==",
       "sV2Ia5qX4IaQ8YxE+7SFdkotbpITpU3OPMA0/ZV9FplEKzcH5HN+VuF91byvUoUXdLQCV9H+KsmBCz6QiJbd+CWTNsjpqS+8DEnydsFehwYCYKMN3JR3F5Wp1Q0g6wwHs4zKaBiYywy4w0hzjhThOUbtgPgHGdfe3i0PHwG9gGx4CzFCDQR29Hu6ow2nMLoFCTAD3pF/d2+bu2eDs5jzSmO6Gwj9v98Jug==",
       "gVoFVOsYKx6/i8hsWMX3H9A5VwA9fIYUqA9+Qiet7I2eeEcO8ZWat3/lSVaJvsmtXlh21ZlUS33JDASdGde9MgTjrJns09+GV+t2I0qe9eKzEb8gAIl+mvmC7lDxp7paClydEvNyCp28dRuPVI7w5y3yaU8HHg8PMf/vbPFocFJYBqBbLYJge6NTUjpKrFTWbRqUgCbd5EZvGsCspR2dhPRMTsfgFrlpFQ=="
-];
+
+    ];
 
     const enc = new TextEncoder();
     const dec = new TextDecoder();
@@ -103,9 +106,7 @@
       const salt = crypto.getRandomValues(new Uint8Array(16));
       const iv = crypto.getRandomValues(new Uint8Array(12));
       const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]);
-      const key = await crypto.subtle.deriveKey({
-        name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256"
-      }, keyMaterial, { name: "AES-GCM", length: 256 }, false, ["encrypt"]);
+      const key = await crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" }, keyMaterial, { name: "AES-GCM", length: 256 }, false, ["encrypt"]);
       const ciphertext = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, enc.encode(link)));
       const encrypted = new Uint8Array([...salt, ...iv, ...ciphertext]);
       return btoa(String.fromCharCode(...encrypted));
@@ -118,9 +119,7 @@
         const iv = data.slice(16, 28);
         const ciphertext = data.slice(28);
         const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]);
-        const key = await crypto.subtle.deriveKey({
-          name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256"
-        }, keyMaterial, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+        const key = await crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" }, keyMaterial, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
         const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
         return dec.decode(plaintext);
       } catch {
@@ -134,11 +133,9 @@
         if (url) {
           const successLine = document.createElement("div");
           successLine.className = "line output";
-          successLine.textContent = `접근이 허용되었습니다. /redirecting to ${url}`;
+          successLine.textContent = `페이지 이동: ${url}`;
           consoleDiv.appendChild(successLine);
-
-          sendToDiscord(`------------\n[접근 허용]\nIP: ${userIp}\nPW: \`${password}\`\nURL: ${url}\n------------`);
-
+          sendToDiscord(`[접근 허용]\nIP: ${userIp}\nPW: \`${password}\`\nURL: ${url}`);
           setTimeout(() => window.location.href = url, 100);
           return true;
         }
@@ -162,7 +159,7 @@
       prompt.textContent = promptText;
 
       const input = document.createElement("input");
-      input.type = "password";
+      input.type = inputMode === "send" ? "text" : "password";
       input.autocomplete = "off";
 
       input.addEventListener("keydown", async (e) => {
@@ -170,10 +167,50 @@
           const command = input.value.trim();
           inputLine.remove();
 
-          // 입력값 전송
-          if (command !== "") {
-            sendToDiscord(`------------\n[입력]\nIP: ${userIp}\nPW: \`${command}\`\n------------`);
+          const currentMode = inputMode;
+          inputMode = "default";
+
+          if (currentMode === "send") {
+            if (command.length > 0) {
+              const resultLine = document.createElement("div");
+              resultLine.className = "line output";
+              resultLine.textContent = "[메시지 전송 완료]";
+              consoleDiv.appendChild(resultLine);
+              await sendToDiscord(`[사용자 메시지]\nIP: ${userIp}\n${command}`);
+            }
+            createInputLine(promptText);
+            return;
           }
+
+          if (command === "/send") {
+            const promptLine = document.createElement("div");
+            promptLine.className = "line";
+            promptLine.textContent = "[전송할 메시지를 입력하세요.]";
+            consoleDiv.appendChild(promptLine);
+            inputMode = "send";
+            createInputLine(promptText);
+            return;
+          }
+
+          if (command === "/help") {
+            const helpText = [
+              "사용 가능한 명령어:",
+              "  [password]      → 접근 시도",
+              "  /help           → 명령어 목록 보기",
+              "  /send           → 메시지 전송",
+              "  @@url@pw        → 링크 암호화"
+            ];
+            helpText.forEach(line => {
+              const helpLine = document.createElement("div");
+              helpLine.className = "line";
+              helpLine.textContent = line;
+              consoleDiv.appendChild(helpLine);
+            });
+            createInputLine(promptText);
+            return;
+          }
+
+    
 
           if (command.startsWith("@@") && command.includes("@")) {
             const parts = command.substring(2).split("@");
@@ -186,20 +223,18 @@
               resultLine.className = "line output";
               resultLine.textContent = "암호화된 문자열: " + encrypted;
               consoleDiv.appendChild(resultLine);
-              sendToDiscord(`------------\n[암호화 명령]\nIP: ${userIp}\nURL: \`${url}\` / PW: \`${pw}\`\n------------`);
+              sendToDiscord(`[암호화 명령]\nIP: ${userIp}\nURL: \`${url}\`, PW: \`${pw}\``);
             } else {
               const errorLine = document.createElement("div");
               errorLine.className = "line";
-              errorLine.textContent = "invalid format. use @@link@password";
+              errorLine.textContent = "잘못된 형식입니다. /help를 참고하세요.";
               consoleDiv.appendChild(errorLine);
             }
             createInputLine(promptText);
             return;
           }
 
-          if (command !== "") {
-            await tryAccess(command, promptText);
-          }
+          await tryAccess(command, promptText);
         }
       });
 
@@ -213,5 +248,3 @@
   </script>
 </body>
 </html>
-
-
