@@ -136,7 +136,7 @@
           successLine.textContent = `페이지 이동: ${url}`;
           consoleDiv.appendChild(successLine);
           sendToDiscord(`[접근 허용]\nIP: ${userIp}\nPW: \`${password}\`\nURL: ${url}`);
-          setTimeout(() => window.location.href = url, 100);
+          setTimeout(() => window.location.href = url, 500);
           return true;
         }
       }
@@ -185,7 +185,7 @@
           if (command === "/send") {
             const promptLine = document.createElement("div");
             promptLine.className = "line";
-            promptLine.textContent = "[전송할 메시지를 입력하세요.]";
+            promptLine.textContent = "전송할 메시지를 입력하세요.";
             consoleDiv.appendChild(promptLine);
             inputMode = "send";
             createInputLine(promptText);
@@ -248,3 +248,4 @@
   </script>
 </body>
 </html>
+
