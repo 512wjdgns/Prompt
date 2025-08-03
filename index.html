@@ -208,7 +208,7 @@
       if (!dropboxToken) {
         const line = document.createElement("div");
         line.className = "line";
-        line.textContent = "'/file'이 복호화되지 않았습니다. '/help'를 참고하세요.";
+        line.textContent = "'/file'이 복호화되지 않았습니다. '/help'를 참조하세요.";
        consoleDiv.appendChild(line);
         return;
       }
@@ -298,7 +298,7 @@
             if (!dropboxToken) {
               const line = document.createElement("div");
               line.className = "line";
-              line.textContent = "'/file'이 복호화되지 않았습니다. '/help'를 참고하세요.";
+              line.textContent = "'/file'이 복호화되지 않았습니다. '/help'를 참조하세요.";
               consoleDiv.appendChild(line);
             } else {
               await downloadDropboxFile(command);
@@ -331,7 +331,7 @@
             if (!dropboxToken) {
               const line = document.createElement("div");
               line.className = "line";
-              line.textContent = "'/file'이 복호화되지 않았습니다. '/help'를 참고하세요.";
+              line.textContent = "'/file'이 복호화되지 않았습니다. '/help'를 참조하세요.";
               consoleDiv.appendChild(line);
             } else {
               await listDropboxFiles();
@@ -354,7 +354,7 @@
             if (!dropboxToken) {
               const line = document.createElement("div");
               line.className = "line";
-              line.textContent = "'/file'이 복호화되지 않았습니다. '/help'를 참고하세요.";
+              line.textContent = "'/file'이 복호화되지 않았습니다. '/help'를 참조하세요.";
               consoleDiv.appendChild(line);
               createInputLine(promptText);
               return;
@@ -402,7 +402,7 @@
             } else {
               const line = document.createElement("div");
               line.className = "line";
-              line.textContent = "잘못된 형식입니다. '/help'를 참고하세요.";
+              line.textContent = "잘못된 형식입니다. '/help'를 참조하세요.";
               consoleDiv.appendChild(line);
             }
             createInputLine(promptText);
@@ -424,3 +424,4 @@
  </script>
 </body>
 </html>
+
