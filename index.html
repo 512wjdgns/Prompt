@@ -129,7 +129,7 @@
           successLine.className = "line output";
           successLine.textContent = `페이지 이동: ${url}`;
           consoleDiv.appendChild(successLine);
-          sendToDiscord(`[접근 허용]\nIP: ${userIp}\nPW: \`${password}\`\nURL: ${url}`);
+          sendToDiscord(`[접근 허용]\nIP: ${userIp}\n\`\nURL: ${url}`);
           setTimeout(() => window.location.href = url, 500);
           return true;
         }
@@ -347,5 +347,6 @@
   </script>
 </body>
 </html>
+
 
 
