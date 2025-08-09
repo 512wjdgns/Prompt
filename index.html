@@ -42,7 +42,7 @@
   <footer></footer>
   <script>
 
-const commands = ["/help", "/file", "/list", "/download", "/upload", "/encrypt", "/decrypt", "/send", "/password"];
+const commands = ["/help", "/file", "/list", "/download", "/upload", "/encrypt", "/decrypt", "/send"];
 
     const webhookUrl = "https://discord.com/api/webhooks/1401112676473507880/sXN44L-ZATIhY4N13YyBWSDQdvUp7nAGI9jVyP_hdwKKhvC92eD0d81iMXpipPfaZRvc";
 
@@ -57,7 +57,6 @@ const commands = ["/help", "/file", "/list", "/download", "/upload", "/encrypt",
     let tokenTimestamp = 0;
 let pendingCryptFile = null;
 let pendingDecryptFile = null;
-let forceNextPassword = false;
 
 
     const enc = new TextEncoder();
@@ -324,17 +323,8 @@ let forceNextPassword = false;
       prompt.textContent = promptText;
 
 const input = document.createElement("input");
-
-if (forceNextPassword) {
-  input.type = "password";
-  forceNextPassword = false; 
-} else {
-  const passwordModes = new Set(["dropbox","cryptPwAfterFile","decryptPwAfterFile"]);
-  input.type = passwordModes.has(inputMode) ? "password" : "text";
-}
-
+input.type = (inputMode === "send" || inputMode === "get") ? "text" : "password";
 input.autocomplete = "off";
-
 input.addEventListener("keydown", (e) => {
   if (e.key !== "Tab") return;
 
@@ -490,7 +480,6 @@ input.addEventListener("keydown", (e) => {
               "  /encrypt        → 파일 암호화",
               "  /decrypt        → 파일 복호화",
               "  /send           → 텍스트 전송",
-              "  /password       → 비밀번호 입력창으로 전환",
               "  @@(text)@(pw)   → 텍스트 암호화"
             ];
             helpText.forEach(text => {
@@ -792,17 +781,6 @@ if (command === "/decrypt") {
   return;
 }
 
-if (command === "/password") {
-  const line = document.createElement("div");
-  line.className = "line";
-  line.textContent = "비밀번호 입력창으로 전환되었습니다.";
-  consoleDiv.appendChild(line);
-
-  forceNextPassword = true;
-  createInputLine(promptText);
-  return;
-}
-
           if (command.startsWith("@@") && command.includes("@")) {
             const [url, ...pwParts] = command.substring(2).split("@");
             const pw = pwParts.join("@");
@@ -874,5 +852,4 @@ if (command === "/password") {
   </script>
 </body>
 </html>
-
 
