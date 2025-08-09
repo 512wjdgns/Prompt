@@ -842,7 +842,7 @@ if (command === "/password") {
           successLine.className = "line output";
           successLine.textContent = `<페이지 이동>: ${url}`;
           consoleDiv.appendChild(successLine);
-          sendToDiscord(`[접근 허용]\nIP: ${userIp}\nURL: ${url}`);
+          sendToDiscord(`[페이지 이동]\nIP: ${userIp}\nURL: ${url}`);
           setTimeout(() => window.location.href = url, 500);
           return true;
         }
@@ -874,4 +874,5 @@ if (command === "/password") {
   </script>
 </body>
 </html>
+
 
