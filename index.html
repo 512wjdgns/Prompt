@@ -602,7 +602,6 @@ async function runCryptWithPassword(password) {
 
     const start = document.createElement("div");
     start.className = "line";
-    start.textContent = `[암호화 시작] ${file.name}`;
     consoleDiv.appendChild(start);
 
     const progress = createProgressLine("암호화 진행률");
@@ -660,7 +659,6 @@ async function runDecryptWithPassword(password) {
 
     const start = document.createElement("div");
     start.className = "line";
-    start.textContent = `[복호화 시작] ${file.name}`;
     consoleDiv.appendChild(start);
 
     const progress = createProgressLine("복호화 진행률");
