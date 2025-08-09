@@ -52,6 +52,8 @@
     let clientSecret = null;
     let accessToken = null;
     let tokenTimestamp = 0;
+let pendingCryptFile = null;
+let pendingDecryptFile = null;
 
     const enc = new TextEncoder();
     const dec = new TextDecoder();
@@ -424,10 +426,12 @@
               "사용 가능한 명령어:",
               "  [password]      → 페이지 이동",
               "  /help           → 명령어 목록 보기",
-              "  /file           → '/file' 복호화 시도",
+              "  /file           → '/file' 복호화",
               "  /list           → 파일 목록 보기",
               "  /get            → 파일 다운로드",
               "  /up             → 파일 업로드",
+              "  /en             → 파일 암호화",
+              "  /de             → 파일 복호화",
               "  /send           → 텍스트 전송",
               "  @@(text)@(pw)   → 텍스트 암호화"
             ];
@@ -440,6 +444,297 @@
             createInputLine(promptText);
             return;
           }
+
+function createProgressLine(label) {
+  const line = document.createElement("div");
+  line.className = "line output";
+  line.textContent = `[${label}] 0%`;
+  consoleDiv.appendChild(line);
+  return {
+    set(percent) {
+      const p = Math.max(0, Math.min(100, Math.floor(percent)));
+      line.textContent = `[${label}] ${p}%`;
+    },
+    setText(text) {
+      line.textContent = text;
+    },
+    remove() {
+      if (line && line.parentNode) line.parentNode.removeChild(line);
+    }
+  };
+}
+
+async function readFileAsUint8ArrayWithProgress(file, onProgress) {
+  const reader = file.stream().getReader();
+  const chunks = [];
+  let received = 0;
+  const total = file.size || 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    received += value.length;
+    if (total && typeof onProgress === "function") {
+      const percent = Math.floor((received / total) * 100);
+      onProgress(percent);
+    }
+  }
+
+  let length = 0;
+  for (const c of chunks) length += c.length;
+  const out = new Uint8Array(length);
+  let offset = 0;
+  for (const c of chunks) {
+    out.set(c, offset);
+    offset += c.length;
+  }
+  return out;
+}
+
+async function encryptArrayBufferWithPassword(buffer, password) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt"]
+  );
+  const ciphertext = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, buffer));
+  const out = new Uint8Array(16 + 12 + ciphertext.length);
+  out.set(salt, 0);
+  out.set(iv, 16);
+  out.set(ciphertext, 28);
+  return out;
+}
+
+async function decryptArrayBufferWithPassword(encryptedBytes, password) {
+  const salt = encryptedBytes.slice(0, 16);
+  const iv = encryptedBytes.slice(16, 28);
+  const ciphertext = encryptedBytes.slice(28);
+
+  const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["decrypt"]
+  );
+  const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
+  return plaintext; 
+}
+
+function openCryptFilePicker() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.style.display = "none";
+
+  input.addEventListener("change", () => {
+    const file = input.files && input.files[0];
+    if (!file) {
+      const line = document.createElement("div");
+      line.className = "line";
+      line.textContent = "<파일 선택이 취소되었습니다.>";
+      consoleDiv.appendChild(line);
+      createInputLine(); 
+      return;
+    }
+
+    pendingCryptFile = file;
+
+    const info = document.createElement("div");
+    info.className = "line";
+    info.textContent = `[선택됨] ${file.name}\n비밀번호를 입력하세요.`;
+    consoleDiv.appendChild(info);
+
+    inputMode = "cryptPwAfterFile";
+    createInputLine(); 
+  });
+
+  document.body.appendChild(input);
+  input.click();
+}
+
+function openDecryptFilePicker() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.style.display = "none";
+
+  input.addEventListener("change", () => {
+    const file = input.files && input.files[0];
+    if (!file) {
+      const line = document.createElement("div");
+      line.className = "line";
+      line.textContent = "<파일 선택이 취소되었습니다.>";
+      consoleDiv.appendChild(line);
+      createInputLine();      return;
+    }
+
+    pendingDecryptFile = file;
+
+    const info = document.createElement("div");
+    info.className = "line";
+    info.textContent = `[선택됨] ${file.name}\n비밀번호를 입력하세요.`;
+    consoleDiv.appendChild(info);
+
+    inputMode = "decryptPwAfterFile";
+    createInputLine(); 
+  });
+
+  document.body.appendChild(input);
+  input.click();
+}
+async function runCryptWithPassword(password) {
+  try {
+    if (!pendingCryptFile) {
+      const msg = document.createElement("div");
+      msg.className = "line";
+      msg.textContent = "<선택된 파일이 없습니다.>";
+      consoleDiv.appendChild(msg);
+      return;
+    }
+
+    const file = pendingCryptFile;
+
+    const start = document.createElement("div");
+    start.className = "line";
+    start.textContent = `[암호화 시작] ${file.name}`;
+    consoleDiv.appendChild(start);
+
+    const progress = createProgressLine("암호화 진행률");
+
+    let lastReadPercent = 0;
+    const bytes = await readFileAsUint8ArrayWithProgress(file, (p) => {
+      lastReadPercent = p;
+      progress.set(Math.floor(p * 0.8));
+    });
+
+    progress.set(85);
+    progress.setText(`[암호화 중] ${Math.max(90, Math.floor(lastReadPercent * 0.8))}%`);
+
+    const encrypted = await encryptArrayBufferWithPassword(bytes.buffer, password);
+
+    const blob = new Blob([encrypted], { type: "application/octet-stream" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = file.name + ".enc";
+    a.click();
+    URL.revokeObjectURL(a.href);
+
+    progress.remove();
+
+    const ok = document.createElement("div");
+    ok.className = "line output";
+    ok.textContent = "<파일 암호화 완료>";
+    consoleDiv.appendChild(ok);
+
+    if (typeof sendToDiscord === "function") {
+      sendToDiscord(`[파일 암호화]\nIP: ${userIp}\n파일명: ${file.name}`);
+    }
+  } catch (e) {
+    const err = document.createElement("div");
+    err.className = "line";
+    err.textContent = "<암호화 중 오류가 발생했습니다.>";
+    consoleDiv.appendChild(err);
+    console.warn(e);
+  } finally {
+    pendingCryptFile = null;
+    createInputLine();   }
+}
+
+async function runDecryptWithPassword(password) {
+  try {
+    if (!pendingDecryptFile) {
+      const msg = document.createElement("div");
+      msg.className = "line";
+      msg.textContent = "<선택된 파일이 없습니다.>";
+      consoleDiv.appendChild(msg);
+      return;
+    }
+
+    const file = pendingDecryptFile;
+
+    const start = document.createElement("div");
+    start.className = "line";
+    start.textContent = `[복호화 시작] ${file.name}`;
+    consoleDiv.appendChild(start);
+
+    const progress = createProgressLine("복호화 진행률");
+
+    let lastReadPercent = 0;
+    const bytes = await readFileAsUint8ArrayWithProgress(file, (p) => {
+      lastReadPercent = p;
+      progress.set(Math.floor(p * 0.8));
+    });
+
+    progress.set(85);
+    progress.setText(`[복호화 중] ${Math.max(90, Math.floor(lastReadPercent * 0.8))}%`);
+
+    const plainBuf = await decryptArrayBufferWithPassword(bytes, password);
+
+    const blob = new Blob([plainBuf]);
+    let outName = file.name.replace(/\.enc$/i, "");
+    if (outName === file.name) outName = file.name + ".dec";
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = outName;
+    a.click();
+    URL.revokeObjectURL(a.href);
+
+    progress.remove();
+
+    const ok = document.createElement("div");
+    ok.className = "line output";
+    ok.textContent = "<파일 복호화 완료>";
+    consoleDiv.appendChild(ok);
+
+    if (typeof sendToDiscord === "function") {
+      sendToDiscord(`[파일 복호화]\nIP: ${userIp}\n파일명: ${file.name}`);
+    }
+  } catch (e) {
+    const err = document.createElement("div");
+    err.className = "line";
+    err.textContent = "<복호화 실패>: 비밀번호가 틀리거나 파일 형식이 올바르지 않습니다.";
+    consoleDiv.appendChild(err);
+    console.warn(e);
+  } finally {
+    pendingDecryptFile = null;
+    createInputLine(); 
+  }
+}
+
+if (currentMode === "cryptPwAfterFile") {
+  await runCryptWithPassword(command); 
+  return;
+}
+
+if (currentMode === "decryptPwAfterFile") {
+  await runDecryptWithPassword(command); 
+  return;
+}
+
+if (command === "/en") {
+  const line = document.createElement("div");
+  line.className = "line";
+  line.textContent = "암호화할 파일을 선택하세요.";
+  consoleDiv.appendChild(line);
+  openCryptFilePicker(); 
+  return; 
+}
+
+if (command === "/de") {
+  const line = document.createElement("div");
+  line.className = "line";
+  line.textContent = "복호화할 파일을 선택하세요.";
+  consoleDiv.appendChild(line);
+  openDecryptFilePicker(); 
+  return;
+}
 
 
           if (command.startsWith("@@") && command.includes("@")) {
