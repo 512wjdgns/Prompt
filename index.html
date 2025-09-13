@@ -950,7 +950,7 @@ if (command === "/file") {
         if (url) {
           const successLine = document.createElement("div");
           successLine.className = "line output";
-          successLine.textContent = `<페이지 이동>: ${url}`;
+          successLine.textContent = `[페이지 이동] ${url}`;
           consoleDiv.appendChild(successLine);
           sendToDiscord(`[페이지 이동]\nIP: ${userIp}\nURL: ${url}`);
           setTimeout(() => window.location.href = url, 500);
@@ -984,3 +984,4 @@ if (command === "/file") {
   </script>
 </body>
 </html>
+
