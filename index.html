@@ -42,7 +42,7 @@
   <footer></footer>
   <script>
 
-const commands = ["/help", "/server", "/list", "/download", "/upload", "/encrypt", "/decrypt", "/text", "/copy", "/time", "/lotto", "/file"];
+const commands = ["/help", "/server", "/list", "/download", "/upload", "/encrypt", "/decrypt", "/text", "/copy", "/lotto", "/file", "/qr"];
 
     const webhookUrl = "https://discord.com/api/webhooks/1401112676473507880/sXN44L-ZATIhY4N13YyBWSDQdvUp7nAGI9jVyP_hdwKKhvC92eD0d81iMXpipPfaZRvc";
 
@@ -399,7 +399,7 @@ function generateLottoSet() {
       prompt.textContent = promptText;
 
 const input = document.createElement("input");
-input.type = (inputMode === "send" || inputMode === "get") ? "text" : "password";
+input.type = (inputMode === "send" || inputMode === "get" || inputMode === "qrInput") ? "text" : "password";
 input.autocomplete = "off";
 input.addEventListener("keydown", (e) => {
   if (e.key !== "Tab") return;
@@ -461,6 +461,43 @@ input.addEventListener("keydown", (e) => {
             return;
           }
 
+if (currentMode === "qrInput") {
+  const payload = command.trim();
+  if (!payload) {
+    const warn = document.createElement("div");
+    warn.className = "line";
+    warn.textContent = "빈 텍스트입니다. 다시 시도해 주세요.";
+    consoleDiv.appendChild(warn);
+    createInputLine(promptText);
+    return;
+  }
+
+  const head = document.createElement("div");
+  head.className = "line";
+  head.textContent = "QR 코드:";
+  consoleDiv.appendChild(head);
+
+  const size = 220;
+  const fg = "ffffff"; 
+  const bg = "000000";
+  const src = "https://api.qrserver.com/v1/create-qr-code/"
+            + `?size=${size}x${size}&color=${fg}&bgcolor=${bg}&data=`
+            + encodeURIComponent(payload);
+
+  const img = document.createElement("img");
+  img.alt = "QR";
+  img.style.marginTop = "6px";
+  img.style.imageRendering = "crisp-edges";
+  img.style.border = "1px solid #000000";
+  img.style.backgroundColor = "#000";
+  img.src = src;
+  consoleDiv.appendChild(img);
+
+
+  
+  createInputLine(promptText); 
+  return;
+}
 
 
 input.addEventListener("keydown", (e) => {
@@ -557,8 +594,8 @@ input.addEventListener("keydown", (e) => {
               "  /decrypt        → 파일 복호화",
               "  /file           → 파일 전송",
               "  /text           → 텍스트 전송",
+              "  /qr             → QR 코드 생성",
               "  /lotto          → 번호 생성",
-              "  /time           → 현재 시각",
               "  /copy           → 마지막 결과 복사",
               "  @@(text)@(pw)   → 텍스트 암호화"
             ];
@@ -882,14 +919,6 @@ if (command === "/lotto" || command.startsWith("/lotto ")) {
   return;
 }
 
-if (command === "/time" || command === "/date") {
-  const line = document.createElement("div");
-  line.className = "line";
-  line.textContent = new Date().toLocaleString();
-  consoleDiv.appendChild(line);
-  createInputLine(promptText);
-  return;
-}
 
 if (command === "/copy") {
   const lines = [...consoleDiv.querySelectorAll(".line, .line.output")];
@@ -913,6 +942,18 @@ if (command === "/file") {
   openFilePickerAndHookUpload(); 
   return;
 }
+
+if (command === "/qr") {
+  const line = document.createElement("div");
+  line.className = "line";
+  line.textContent = "텍스트를 입력하세요.";
+  consoleDiv.appendChild(line);
+
+  inputMode = "qrInput";      
+  createInputLine(promptText);
+  return;
+}
+
           if (command.startsWith("@@") && command.includes("@")) {
             const [url, ...pwParts] = command.substring(2).split("@");
             const pw = pwParts.join("@");
@@ -984,4 +1025,3 @@ if (command === "/file") {
   </script>
 </body>
 </html>
-
