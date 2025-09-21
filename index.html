@@ -681,7 +681,67 @@ input.addEventListener("keydown", (e) => {
               "  /upload         → 파일 업로드",
               "  /encrypt        → 파일 암호화",
               "  /decrypt        → 파일 복호화",
-              "  /file           → 파일 전송",
+              "  /file           → 파일 전송 (파일 드래그 앤 드롭           const line = document.createElement("div");
+            line.className = "line";
+            line.textContent = "비밀번호를 입력하세요.";
+            consoleDiv.appendChild(line);
+            inputMode = "dropbox";
+            createInputLine(promptText);
+            return;
+          }
+
+          if (command === "/list") {
+            if (!refreshToken) {
+              const line = document.createElement("div");
+              line.className = "line";
+              line.textContent = "'/server' 접근이 거부되었습니다. '/help'를 참조하세요.";
+              consoleDiv.appendChild(line);
+            } else {
+              await listDropboxFiles();
+            }
+            createInputLine(promptText);
+            return;
+          }
+
+          if (command === "/download") {
+            const line = document.createElement("div");
+            line.className = "line";
+            line.textContent = "다운로드할 파일명을 입력하세요.";
+            consoleDiv.appendChild(line);
+            inputMode = "get";
+            createInputLine(promptText);
+            return;
+          }
+
+          if (command === "/upload") {
+            if (!refreshToken) {
+              const line = document.createElement("div");
+              line.className = "line";
+              line.textContent = "'/server' 접근이 거부되었습니다. '/help'를 참조하세요.";
+              consoleDiv.appendChild(line);
+              createInputLine(promptText);
+              return;
+            }
+            const line = document.createElement("div");
+            line.className = "line";
+            line.textContent = "업로드할 파일을 선택하세요.";
+            consoleDiv.appendChild(line);
+            createFileSelectorAndUpload();
+            return;
+          }
+
+          if (command === "/help") {
+            const helpText = [
+              "명령어 목록:",
+              "  [code]          → 페이지 이동",
+              "  /help           → 명령어 목록 보기",
+              "  /server         → '/server' 접근 권환 획득",
+              "  /list           → 파일 목록 보기",
+              "  /download       → 파일 다운로드",
+              "  /upload         → 파일 업로드",
+              "  /encrypt        → 파일 암호화",
+              "  /decrypt        → 파일 복호화",
+              "  /file           → 파일 전송 (파일 드래그 앤 드롭)",
               "  /text           → 텍스트 전송",
               "  /qr             → QR 코드 생성",
               "  /lotto          → 번호 생성",
@@ -1114,3 +1174,4 @@ if (command === "/qr") {
   </script>
 </body>
 </html>
+
