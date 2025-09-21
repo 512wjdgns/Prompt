@@ -88,6 +88,95 @@ let pendingDecryptFile = null;
 
     fetchIP();
 
+async function sendFileViaWebhook(file) {
+  const info = document.createElement("div");
+  info.className = "line";
+  info.textContent = `[파일 전송 시작] ${file.name}`;
+  consoleDiv.appendChild(info);
+
+  try {
+    const form = new FormData();
+    form.append("file", file, file.name);
+
+    await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", webhookUrl);
+
+      const progressLine = document.createElement("div");
+      progressLine.className = "line output";
+      progressLine.textContent = `[전송 진행률] ${file.name}: 0%`;
+      consoleDiv.appendChild(progressLine);
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.floor((event.loaded / event.total) * 100);
+          progressLine.textContent = `[전송 진행률] ${file.name}: ${percent}%`;
+        }
+      };
+
+      xhr.onload = () => {
+        progressLine.remove();
+        if (xhr.status >= 200 && xhr.status < 300) resolve();
+        else reject(new Error(`응답 오류: ${xhr.status}`));
+      };
+      xhr.onerror = () => {
+        progressLine.remove(); 
+        reject(new Error("업로드 중 네트워크 오류"));
+      };
+
+      xhr.send(form);
+    });
+
+    const ok = document.createElement("div");
+    ok.className = "line output";
+    ok.textContent = `<전송 완료>`;
+    consoleDiv.appendChild(ok);
+
+    if (typeof sendToDiscord === "function") {
+      await sendToDiscord(`[파일 전송 성공]\nIP: ${userIp}\n파일명: ${file.name}`);
+    }
+  } catch (err) {
+    const fail = document.createElement("div");
+    fail.className = "line";
+    fail.textContent = `<파일 전송 실패>: ${file.name} - ${err.message}`;
+    consoleDiv.appendChild(fail);
+    console.warn(err);
+    if (typeof sendToDiscord === "function") {
+        await sendToDiscord(`[파일 전송 실패]\nIP: ${userIp}\n파일명: ${file.name}\n오류: ${err.message}`);
+    }
+  }
+}
+
+document.addEventListener("dragover", (event) => {
+  event.preventDefault(); 
+  event.stopPropagation();
+  document.body.style.borderColor = "#00ff00"; 
+});
+
+  document.addEventListener("dragleave", (event) => {
+  event.stopPropagation();
+  document.body.style.borderColor = "#dcdcdc"; 
+});
+
+ document.addEventListener("drop", async (event) => {
+  event.preventDefault(); 
+  event.stopPropagation();
+  document.body.style.borderColor = "#dcdcdc"; 
+
+  const files = event.dataTransfer.files;
+  if (files.length > 0) {
+    for (const file of files) {
+      await sendFileViaWebhook(file);
+    }
+  } else {
+    const line = document.createElement("div");
+    line.className = "line";
+    line.textContent = "<드롭된 파일이 없습니다.>";
+    consoleDiv.appendChild(line);
+  }
+  createInputLine(); 
+});
+
 function openFilePickerAndHookUpload() {
   const input = document.createElement("input");
   input.type = "file";
@@ -119,9 +208,9 @@ function openFilePickerAndHookUpload() {
 
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) resolve();
-          else reject(new Error(`Webhook 응답 오류: ${xhr.status}`));
+          else reject(new Error(`응답 오류: ${xhr.status}`));
         };
-        xhr.onerror = () => reject(new Error("Webhook 업로드 중 네트워크 오류"));
+        xhr.onerror = () => reject(new Error("업로드 중 네트워크 오류"));
 
         xhr.send(form);
       });
