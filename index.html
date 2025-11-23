@@ -32,6 +32,35 @@
       color: #555;
     }
     .output { color: #00ff00; }
+
+#floating-circle {
+      position: fixed;
+      bottom: 30px;       
+      right: 30px;       
+      width: 60px;        
+      height: 60px;       
+      background-color: #00a884; 
+      border-radius: 50%; 
+      
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      
+      text-decoration: none;
+      z-index: 9999;
+      transition: transform 0.3s ease;
+    }
+
+    #floating-circle:hover {
+      transform: scale(1.1);
+    }
+
+    #floating-circle span {
+      color: #000000;     
+      font-size: 24px;   
+      font-weight: bold;
+    }
+
   </style>
 </head>
 <body>
@@ -39,10 +68,13 @@
     <div class="line" id="ip-line">[IP 주소 로딩 중...]</div>
     <div class="line">(c) 정훈.서버.한국. All rights reserved.</div>
   </div>
+<a id="floating-circle" href="https://512wjdgns.github.io/chat/">
+    <span>➤</span>
+  </a>
   <footer></footer>
   <script>
 
-const commands = ["/help", "/server", "/list", "/download", "/upload", "/encrypt", "/decrypt", "/text", "/copy", "/lotto", "/file", "/qr"];
+const commands = ["/help", "/server", "/list", "/download", "/upload", "/encrypt", "/decrypt", "/text", "/copy",  "timer", "clock", "/lotto", "/file", "/qr"];
 
     const webhookUrl = "https://discord.com/api/webhooks/1401112676473507880/sXN44L-ZATIhY4N13YyBWSDQdvUp7nAGI9jVyP_hdwKKhvC92eD0d81iMXpipPfaZRvc";
 
@@ -686,7 +718,9 @@ input.addEventListener("keydown", (e) => {
               "  /qr             → QR 코드 생성",
               "  /lotto          → 번호 생성",
               "  /copy           → 마지막 결과 복사",
-              "  @@(text)@(pw)   → 텍스트 암호화"
+              "  @@(text)@(pw)   → 텍스트 암호화",
+              "  timer           → 타이머",
+              "  clock           → 시계"
             ];
             helpText.forEach(text => {
               const line = document.createElement("div");
@@ -1116,6 +1150,5 @@ if (command === "/qr") {
   </script>
 </body>
 </html>
-
 
 
