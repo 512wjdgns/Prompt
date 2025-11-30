@@ -1,6 +1,6 @@
 
 <!DOCTYPE html>
-<html lang="">
+<html lang="ko">
 <head>
   <meta charset="UTF-8">
   <title>정훈.서버.한국</title>
@@ -77,6 +77,12 @@
 const commands = ["/help", "/server", "/list", "/download", "/upload", "/encrypt", "/decrypt", "/text", "/copy",  "timer", "clock", "/lotto", "/file", "/qr"];
 
     const webhookUrl = "https://discord.com/api/webhooks/1401112676473507880/sXN44L-ZATIhY4N13YyBWSDQdvUp7nAGI9jVyP_hdwKKhvC92eD0d81iMXpipPfaZRvc";
+
+function safeHeaderJson(obj) {
+  return JSON.stringify(obj).replace(/[\u007f-\uffff]/g, function(c) {
+    return '\\u' + ('0000' + c.charCodeAt(0).toString(16)).slice(-4);
+  });
+}
 
     let userIp = "알 수 없음";
     let userAgent = navigator.userAgent;
@@ -372,7 +378,7 @@ function generateLottoSet() {
       return false;
     }
 
-    async function listDropboxFiles() {
+async function listDropboxFiles() {
       if (!await ensureAccessToken()) return;
 
       const res = await fetch("https://api.dropboxapi.com/2/files/list_folder", {
@@ -388,6 +394,21 @@ function generateLottoSet() {
         const line = document.createElement("div");
         line.className = "line output";
         line.textContent = f.name;
+        
+        line.style.cursor = "pointer";
+        line.style.textDecoration = "underline";
+
+        line.addEventListener("click", async () => {
+          const currentInput = document.querySelector(".input-line");
+          if (currentInput) {
+            currentInput.remove();
+          }
+
+          await downloadDropboxFile(f.name);
+
+          createInputLine();
+        });
+
         consoleDiv.appendChild(line);
       });
     }
@@ -400,7 +421,7 @@ function generateLottoSet() {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${accessToken}`,
-        "Dropbox-API-Arg": JSON.stringify({ path: "/" + name })
+"Dropbox-API-Arg": safeHeaderJson({ path: "/" + name })
       }
     });
 
@@ -437,7 +458,7 @@ function generateLottoSet() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = decodeURIComponent(escape(name));
+    a.download = name;
     a.click();
 
     await sendToDiscord(`[파일 다운로드]\nIP: ${userIp}\n파일명: ${name}`);
@@ -457,14 +478,14 @@ function generateLottoSet() {
     xhr.open("POST", "https://content.dropboxapi.com/2/files/upload");
 
     xhr.setRequestHeader("Authorization", `Bearer ${accessToken}`);
-    xhr.setRequestHeader("Dropbox-API-Arg", JSON.stringify({
+xhr.setRequestHeader("Dropbox-API-Arg", safeHeaderJson({
       path: "/" + file.name,
       mode: "add",
       autorename: true,
       mute: false
     }));
+    
     xhr.setRequestHeader("Content-Type", "application/octet-stream");
-
     const progressLine = document.createElement("div");
     progressLine.className = "line output";
     progressLine.textContent = `[업로드 진행률] 0%`;
@@ -1150,5 +1171,4 @@ if (command === "/qr") {
   </script>
 </body>
 </html>
-
 
